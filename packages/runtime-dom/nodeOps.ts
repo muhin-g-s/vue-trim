@@ -20,4 +20,8 @@ export const nodeOps: Omit<RendererOptions, "patchProp"> = {
 	setText: (node, text) => {
     node.nodeValue = text
   },
+
+	parentNode: node => {
+    return node.parentNode
+  },
 }

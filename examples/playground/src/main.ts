@@ -1,8 +1,19 @@
-import { createApp } from 'vue-trim'
+import { createApp, h } from 'vue-trim'
 
 const app = createApp({
-  render() {
-    return 'Hello world.'
+	render() {
+    return h('div', { id: 'my-app' }, [
+      h('p', { style: 'color: red; font-weight: bold;' }, ['Hello world.']),
+      h(
+        'button',
+        {
+          onClick() {
+            alert('Hello world!')
+          },
+        },
+        ['click me!'],
+      ),
+    ])
   },
 })
 

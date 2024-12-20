@@ -1,3 +1,9 @@
-import { helloVueTrim } from 'vue-trim';
+import { createApp } from 'vue-trim'
 
-helloVueTrim();
+const app = createApp({
+  render() {
+    return 'Hello world.'
+  },
+})
+
+app.mount('#app')

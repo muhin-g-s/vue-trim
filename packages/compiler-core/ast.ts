@@ -2,6 +2,8 @@ export const enum NodeTypes {
   ELEMENT,
   TEXT,
   ATTRIBUTE,
+	INTERPOLATION,
+	DIRECTIVE,
 }
 
 export interface Node {
@@ -12,7 +14,7 @@ export interface Node {
 export interface ElementNode extends Node {
   type: NodeTypes.ELEMENT
   tag: string
-  props: Array<AttributeNode>
+	props: Array<AttributeNode | DirectiveNode>
   children: TemplateChildNode[]
   isSelfClosing: boolean
 }
@@ -22,7 +24,19 @@ export interface TextNode extends Node {
   content: string
 }
 
-export type TemplateChildNode = ElementNode | TextNode
+export interface InterpolationNode extends Node {
+  type: NodeTypes.INTERPOLATION
+  content: string 
+}
+
+export interface DirectiveNode extends Node {
+  type: NodeTypes.DIRECTIVE
+  name: string
+  arg: string
+  exp: string
+}
+
+export type TemplateChildNode = ElementNode | TextNode | InterpolationNode | DirectiveNode
 
 export interface AttributeNode extends Node {
   type: NodeTypes.ATTRIBUTE

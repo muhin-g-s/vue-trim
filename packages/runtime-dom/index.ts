@@ -1,5 +1,5 @@
 import {
-  CreateAppFunction,
+  type CreateAppFunction,
   createAppAPI,
   createRenderer,
 } from '../runtime-core'
@@ -20,3 +20,5 @@ export const createApp = ((...args) => {
 
   return app
 }) as CreateAppFunction<Element>
+
+export * from '../runtime-core'

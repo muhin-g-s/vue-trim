@@ -11,6 +11,6 @@
     "allowJs": true,
     "esModuleInterop": true
   },
-  "include": ["packages/**/*.ts", "examples/**/**.ts"],
+  "include": ["packages/**/*.ts", "examples/**/**.ts", "examples/playground/src/App.vue"],
   "exclude": ["node_modules", "dist"]
 }

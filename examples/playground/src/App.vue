@@ -1,8 +1,9 @@
 <script>
 import { reactive } from 'vue-trim'
+
 export default {
   setup() {
-    const state = reactive({ message: 'Hello, vue-trim!', input: '' })
+    const state = reactive({ message: 'Hello, chibivue!', input: '' })
 
     const changeMessage = () => {
       state.message += '!'

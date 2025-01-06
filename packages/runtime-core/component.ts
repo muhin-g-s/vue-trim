@@ -85,4 +85,9 @@ export const setupComponent = (instance: ComponentInternalInstance) => {
       instance.render = compile(template)
     }
   }
+
+	const { render } = component
+  if (render) {
+    instance.render = render as InternalRenderFunction
+  }
 }

@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-   "dev": "cd examples/playground && pnpm i && pnpm run dev"
+    "dev": "cd examples/playground && pnpm i && pnpm run dev",
+		"lint:ts": "tsc --noEmit"
   },
   "keywords": [],
   "author": "",

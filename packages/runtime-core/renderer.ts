@@ -2,6 +2,7 @@ import { ReactiveEffect } from '../reactivity'
 import { ShapeFlags } from '../shared'
 import { Component, ComponentInternalInstance, createComponentInstance, setupComponent } from './component'
 import { updateProps } from './componentProps'
+import { queueJob, SchedulerJob } from './scheduler'
 import { Text, VNode, createVNode, isSameVNodeType, normalizeVNode } from './vnode'
 
 export type RootRenderFunction<HostElement = RendererElement> = (
@@ -364,8 +365,12 @@ export function createRenderer(options: RendererOptions) {
       }
     }
 
-    const effect = (instance.effect = new ReactiveEffect(componentUpdateFn))
-    const update = (instance.update = () => effect.run())
+    const effect = (instance.effect = new ReactiveEffect(
+      componentUpdateFn,
+      () => queueJob(update),
+    ))
+    const update: SchedulerJob = (instance.update = () => effect.run())
+    update.id = instance.uid
     update()
   }
 

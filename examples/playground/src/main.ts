@@ -1,22 +1,33 @@
-import { createApp, h, ref } from 'vue-trim'
+import { createApp, h, shallowRef } from 'vue-trim'
 
 const app = createApp({
   setup() {
-    const count = ref(0)
-
-		const setCount = () => {
-			count.value+=1;
-			count.value+=1;
-		}
+    const state = shallowRef({ count: 0 })
 
     return () =>
-     {
-			console.log('render')
-			 return h('div', {}, [
-        h('p', {}, [`count: ${count.value}`]),
-        h('button', { onClick: setCount }, ['Increment']),
+      h('div', {}, [
+        h('p', {}, [`count: ${state.value.count}`]),
+
+        h(
+          'button',
+          {
+            onClick: () => {
+              state.value = { count: state.value.count + 1 }
+            },
+          },
+          ['increment'],
+        ),
+
+        h(
+          'button', // Clicking does not trigger re-rendering
+          {
+            onClick: () => {
+              state.value.count++
+            },
+          },
+          ['not trigger ...'],
+        ),
       ])
-		}
   },
 })
 

@@ -1,25 +1,22 @@
-import { createApp, h, nextTick, reactive } from 'vue-trim'
+import { createApp, h, ref } from 'vue-trim'
 
 const app = createApp({
   setup() {
-    const state = reactive({
-      count: 0,
-    })
-    const updateState = async () => {
-      state.count++
-      await nextTick()
-      const p = document.getElementById('count-p')
-      if (p) {
-        console.log('😎 p.textContent', p.textContent)
-      }
-    }
+    const count = ref(0)
 
-    return () => {
-      return h('div', { id: 'app' }, [
-        h('p', { id: 'count-p' }, [`${state.count}`]),
-        h('button', { onClick: updateState }, ['update']),
+		const setCount = () => {
+			count.value+=1;
+			count.value+=1;
+		}
+
+    return () =>
+     {
+			console.log('render')
+			 return h('div', {}, [
+        h('p', {}, [`count: ${count.value}`]),
+        h('button', { onClick: setCount }, ['Increment']),
       ])
-    }
+		}
   },
 })
 

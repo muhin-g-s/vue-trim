@@ -1,3 +1,4 @@
+import { isArray } from '../shared'
 import { Dep, createDep } from './dep'
 
 type KeyToDepMap = Map<any, Dep>
@@ -38,6 +39,12 @@ export function track(target: object, key: unknown) {
   }
 }
 
+export function trackEffects(dep: Dep) {
+  if (activeEffect) {
+    dep.add(activeEffect)
+  }
+}
+
 export function trigger(target: object, key?: unknown) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
@@ -53,5 +60,20 @@ export function trigger(target: object, key?: unknown) {
         effect.run()
       }
     }
+  }
+}
+
+export function triggerEffects(dep: Dep | ReactiveEffect[]) {
+  const effects = isArray(dep) ? dep : [...dep]
+  for (const effect of effects) {
+    triggerEffect(effect)
+  }
+}
+
+function triggerEffect(effect: ReactiveEffect) {
+  if (effect.scheduler) {
+    effect.scheduler()
+  } else {
+    effect.run()
   }
 }

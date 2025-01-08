@@ -10,3 +10,5 @@ export {
   registerRuntimeCompiler,
   type InternalRenderFunction,
 } from './component'
+
+export { nextTick } from './scheduler'

@@ -1,4 +1,4 @@
-import { ReactiveEffect } from '../reactivity'
+import { EffectScope, ReactiveEffect } from '../reactivity'
 import { emit } from './componentEmits'
 import { ComponentOptions } from './componentOptions'
 import { initProps, Props } from './componentProps'
@@ -22,6 +22,7 @@ export interface ComponentInternalInstance {
   props: Data
 	emit: (event: string, ...args: any[]) => void
 	setupState: Data
+	scope: EffectScope
 }
 
 export type InternalRenderFunction = {
@@ -48,7 +49,8 @@ export function createComponentInstance(
 		propsOptions: type.props || {},
     props: {},
 		emit: null!,
-		setupState: {}
+		setupState: {},
+		scope: new EffectScope(),
   }
 
 	instance.emit = emit.bind(null, instance)
@@ -69,9 +71,11 @@ export const setupComponent = (instance: ComponentInternalInstance) => {
 
   const component = instance.type as Component
 	if (component.setup) {
+		instance.scope.on()
     const setupResult = component.setup(instance.props, {
       emit: instance.emit,
     }) as InternalRenderFunction
+		instance.scope.off()
 
     // Branch based on the type of setupResult
     if (typeof setupResult === 'function') {

@@ -6,6 +6,7 @@ export {
   toRefs,
   isRef,
   type Ref,
+	customRef
 } from './ref'
 export { reactive } from './reactive'
 export { ReactiveEffect } from './effect'

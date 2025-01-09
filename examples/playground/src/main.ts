@@ -1,15 +1,22 @@
-import { createApp, h, ref, watchEffect } from 'vue-trim'
+import { createApp, h, ref } from 'vue-trim'
 
 const app = createApp({
   setup() {
-    const count = ref(0)
-
-    watchEffect(() => console.log(count.value))
+    const inputRef = ref<HTMLInputElement | null>(null)
+    const getRef = () => {
+      inputRef.value = document.getElementById(
+        'my-input',
+      ) as HTMLInputElement | null
+    }
+    const focus = () => {
+      inputRef.value?.focus()
+    }
 
     return () =>
       h('div', {}, [
-        h('p', {}, [`count: ${count.value}`]),
-        h('button', { onClick: () => count.value++ }, ['update count']),
+        h('input', { id: 'my-input' }, []),
+        h('button', { onClick: getRef }, ['getRef']),
+        h('button', { onClick: focus }, ['focus']),
       ])
   },
 })

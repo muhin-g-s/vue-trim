@@ -1,4 +1,4 @@
-import { isArray } from '../shared'
+import { isArray, isIntegerKey } from '../shared'
 import { Dep, createDep } from './dep'
 
 type KeyToDepMap = Map<any, Dep>
@@ -7,6 +7,8 @@ const targetMap = new WeakMap<any, KeyToDepMap>()
 export let activeEffect: ReactiveEffect | undefined
 
 export type EffectScheduler = (...args: any[]) => any
+
+export const ITERATE_KEY = Symbol()
 
 export class ReactiveEffect<T = any> {
   constructor(
@@ -34,9 +36,7 @@ export function track(target: object, key: unknown) {
     depsMap.set(key, (dep = createDep()))
   }
 
-  if (activeEffect) {
-    dep.add(activeEffect)
-  }
+  trackEffects(dep)
 }
 
 export function trackEffects(dep: Dep) {
@@ -49,16 +49,20 @@ export function trigger(target: object, key?: unknown) {
   const depsMap = targetMap.get(target)
   if (!depsMap) return
 
-  const dep = depsMap.get(key)
+  let deps: (Dep | undefined)[] = []
+  if (key !== void 0) {
+    deps.push(depsMap.get(key))
+  }
+  if (!isArray(target)) {
+    deps.push(depsMap.get(ITERATE_KEY))
+  } else if (isIntegerKey(key)) {
+    // new index added to array -> length changes
+    deps.push(depsMap.get('length'))
+  }
 
-  if (dep) {
-    const effects = [...dep]
-    for (const effect of effects) {
-			if (effect.scheduler) {
-        effect.scheduler()
-      } else {
-        effect.run()
-      }
+  for (const dep of deps) {
+    if (dep) {
+      triggerEffects(dep)
     }
   }
 }

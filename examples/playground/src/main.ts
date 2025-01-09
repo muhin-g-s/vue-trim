@@ -1,37 +1,48 @@
-import { createApp, h, ref } from 'vue-trim'
+import { createApp, h, ref, reactive } from 'vue-trim'
 
-const Child = {
+const ReactiveCollection = {
   setup() {
-    const action = () => alert('clicked!')
-    return { action }
-  },
+    const state = reactive({ map: new Map(), set: new Set() })
 
-  template: `<button @click="action">action (child)</button>`,
-}
-
-const app = createApp({
-  setup() {
-    const inputRef = ref<HTMLInputElement | null>(null)
-    const focus = () => {
-      inputRef.value?.focus()
+    const array = ref<number[]>([])
+    const mutateArray = () => {
+      array.value.push(Date.now())
     }
 
-    const childRef = ref<any>(null)
-    const childAction = () => {
-      childRef.value?.action()
+    const record = reactive<Record<string, number>>({})
+    const mutateRecord = () => {
+      record[Date.now().toString()] = Date.now()
     }
 
     return () =>
       h('div', {}, [
-        h('input', { ref: inputRef }, []),
-        h('button', { onClick: focus }, ['focus']),
-        h('hr', {}, []),
-        h('div', {}, [
-          h(Child, { ref: childRef }, []),
-          h('button', { onClick: childAction }, ['action (parent)']),
+        h('h1', {}, [`ReactiveCollection`]),
+
+        h('p', {}, [`array: ${JSON.stringify(array.value)}`]),
+        h('button', { onClick: mutateArray }, ['update array']),
+
+        h('p', {}, [`record: ${JSON.stringify(record)}`]),
+        h('button', { onClick: mutateRecord }, ['update record']),
+
+        h('p', {}, [
+          `map (${state.map.size}): ${JSON.stringify([...state.map])}`,
+        ]),
+        h('button', { onClick: () => state.map.set(Date.now(), 'item') }, [
+          'update map',
+        ]),
+
+        h('p', {}, [
+          `set (${state.set.size}): ${JSON.stringify([...state.set])}`,
+        ]),
+        h('button', { onClick: () => state.set.add(Date.now()) }, [
+          'update set',
         ]),
       ])
   },
+}
+
+const app = createApp({
+  setup: () => () => h('div', {}, [h(ReactiveCollection, {}, [])]),
 })
 
 app.mount('#app')

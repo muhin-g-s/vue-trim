@@ -46,3 +46,9 @@ export const objectToString = Object.prototype.toString
 
 export const toTypeString = (value: unknown): string =>
   objectToString.call(value)
+
+export const isIntegerKey = (key: unknown) =>
+  isString(key) &&
+  key !== 'NaN' &&
+  key[0] !== '-' &&
+  '' + parseInt(key, 10) === key

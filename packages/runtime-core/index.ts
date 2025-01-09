@@ -12,3 +12,5 @@ export {
 } from './component'
 
 export { nextTick } from './scheduler'
+
+export { watch } from './apiWatch'

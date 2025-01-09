@@ -1,3 +1,4 @@
+import { hasChanged } from '../shared'
 import { track, trigger } from './effect'
 import { reactive } from './reactive'
 
@@ -22,5 +23,3 @@ export const mutableHandlers: ProxyHandler<object> = {
     return true
   },
 }
-
-const hasChanged = (value: any, oldValue: any): boolean => !Object.is(value, oldValue)

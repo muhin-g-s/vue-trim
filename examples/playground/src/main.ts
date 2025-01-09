@@ -1,48 +1,27 @@
-import { createApp, h, ref, reactive } from 'vue-trim'
+import { createApp, h, watch, reactive } from 'vue-trim'
 
-const ReactiveCollection = {
+const app = createApp({
   setup() {
-    const state = reactive({ map: new Map(), set: new Set() })
-
-    const array = ref<number[]>([])
-    const mutateArray = () => {
-      array.value.push(Date.now())
+    const state = reactive({ count: 0 })
+    const increment = () => {
+      state.count++
     }
 
-    const record = reactive<Record<string, number>>({})
-    const mutateRecord = () => {
-      record[Date.now().toString()] = Date.now()
-    }
+    const unwatch = watch(
+      () => state.count,
+      (newValue, oldValue, cleanup) => {
+        alert(`New value: ${newValue}, old value: ${oldValue}`)
+        cleanup(() => alert('Clean Up!'))
+      },
+    )
 
     return () =>
       h('div', {}, [
-        h('h1', {}, [`ReactiveCollection`]),
-
-        h('p', {}, [`array: ${JSON.stringify(array.value)}`]),
-        h('button', { onClick: mutateArray }, ['update array']),
-
-        h('p', {}, [`record: ${JSON.stringify(record)}`]),
-        h('button', { onClick: mutateRecord }, ['update record']),
-
-        h('p', {}, [
-          `map (${state.map.size}): ${JSON.stringify([...state.map])}`,
-        ]),
-        h('button', { onClick: () => state.map.set(Date.now(), 'item') }, [
-          'update map',
-        ]),
-
-        h('p', {}, [
-          `set (${state.set.size}): ${JSON.stringify([...state.set])}`,
-        ]),
-        h('button', { onClick: () => state.set.add(Date.now()) }, [
-          'update set',
-        ]),
+        h('p', {}, [`count: ${state.count}`]),
+        h('button', { onClick: increment }, [`increment`]),
+        h('button', { onClick: unwatch }, [`unwatch`]),
       ])
   },
-}
-
-const app = createApp({
-  setup: () => () => h('div', {}, [h(ReactiveCollection, {}, [])]),
 })
 
 app.mount('#app')

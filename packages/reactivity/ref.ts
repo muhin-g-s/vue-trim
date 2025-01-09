@@ -1,9 +1,11 @@
 import { IfAny, isArray } from '../shared'
+import { CollectionTypes } from './collectionHandlers'
 import { Dep, createDep } from './dep'
 import { getDepFromReactive, trackEffects, triggerEffects } from './effect'
-import { toReactive } from './reactive'
+import { ShallowReactiveMarker, toReactive } from './reactive'
 
 declare const RefSymbol: unique symbol
+export declare const RawSymbol: unique symbol
 
 type RefBase<T> = {
   dep?: Dep
@@ -95,6 +97,52 @@ export function triggerRef(ref: Ref) {
   triggerRefValue(ref)
 }
 
+export type MaybeRef<T = any> = T | Ref<T>
+export type MaybeRefOrGetter<T = any> = MaybeRef<T> | (() => T)
+export function unref<T>(ref: MaybeRef<T>): T {
+  return isRef(ref) ? ref.value : ref
+}
+
+/*
+ *
+ * custom ref
+ *
+ */
+export type CustomRefFactory<T> = (
+  track: () => void,
+  trigger: () => void,
+) => {
+  get: () => T
+  set: (value: T) => void
+}
+
+class CustomRefImpl<T> {
+  public dep?: Dep = undefined
+  private readonly _get: ReturnType<CustomRefFactory<T>>['get']
+  private readonly _set: ReturnType<CustomRefFactory<T>>['set']
+  public readonly __v_isRef = true
+
+  constructor(factory: CustomRefFactory<T>) {
+    const { get, set } = factory(
+      () => trackRefValue(this),
+      () => triggerRefValue(this),
+    )
+    this._get = get
+    this._set = set
+  }
+
+  get value() {
+    return this._get()
+  }
+
+  set value(newVal) {
+    this._set(newVal)
+  }
+}
+
+export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
+  return new CustomRefImpl(factory) as any
+}
 /*
  *
  * toRef
@@ -170,44 +218,28 @@ class ObjectRefImpl<T extends object, K extends keyof T> {
   }
 }
 
+type BaseTypes = string | number | boolean
+export interface RefUnwrapBailTypes {}
 
-/*
- *
- * custom ref
- *
- */
-export type CustomRefFactory<T> = (
-  track: () => void,
-  trigger: () => void,
-) => {
-  get: () => T
-  set: (value: T) => void
-}
+export type UnwrapRef<T> =
+  T extends ShallowRef<infer V>
+    ? V
+    : T extends Ref<infer V>
+      ? UnwrapRefSimple<V>
+      : UnwrapRefSimple<T>
 
-class CustomRefImpl<T> {
-  public dep?: Dep = undefined
-  private readonly _get: ReturnType<CustomRefFactory<T>>['get']
-  private readonly _set: ReturnType<CustomRefFactory<T>>['set']
-  public readonly __v_isRef = true
-
-  constructor(factory: CustomRefFactory<T>) {
-    const { get, set } = factory(
-      () => trackRefValue(this),
-      () => triggerRefValue(this),
-    )
-    this._get = get
-    this._set = set
-  }
-
-  get value() {
-    return this._get()
-  }
-
-  set value(newVal) {
-    this._set(newVal)
-  }
-}
-
-export function customRef<T>(factory: CustomRefFactory<T>): Ref<T> {
-  return new CustomRefImpl(factory) as any
-}
+export type UnwrapRefSimple<T> = T extends
+  | Function
+  | CollectionTypes
+  | BaseTypes
+  | Ref
+  | RefUnwrapBailTypes[keyof RefUnwrapBailTypes]
+  | { [RawSymbol]?: true }
+  ? T
+  : T extends ReadonlyArray<any>
+    ? { [K in keyof T]: UnwrapRefSimple<T[K]> }
+    : T extends object & { [ShallowReactiveMarker]?: never }
+      ? {
+          [P in keyof T]: P extends symbol ? T[P] : UnwrapRef<T[P]>
+        }
+      : T

@@ -5,10 +5,11 @@ export {
   toRef,
   toRefs,
   isRef,
+  customRef,
+  unref,
   type Ref,
-	customRef
 } from './ref'
-export { reactive } from './reactive'
+export { reactive, readonly, isProxy, isReactive, isReadonly } from './reactive'
 export { ReactiveEffect } from './effect'
 export {
   computed,

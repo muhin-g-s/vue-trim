@@ -2,6 +2,7 @@ import { ReactiveEffect } from '../reactivity'
 import { ShapeFlags } from '../shared'
 import { Component, ComponentInternalInstance, createComponentInstance, setupComponent } from './component'
 import { updateProps } from './componentProps'
+import { setRef } from './rendererTemplateRef'
 import { queueJob, SchedulerJob } from './scheduler'
 import { Text, VNode, createVNode, isSameVNodeType, normalizeVNode } from './vnode'
 
@@ -48,7 +49,8 @@ export function createRenderer(options: RendererOptions) {
     container: RendererElement,
     anchor: RendererElement | null,
   ) => {
-    const { type, shapeFlag } = n2
+    const { type, ref, shapeFlag } = n2
+
     if (type === Text) {
       processText(n1, n2, container, anchor)
     } else if (shapeFlag & ShapeFlags.ELEMENT) {
@@ -57,6 +59,10 @@ export function createRenderer(options: RendererOptions) {
       processComponent(n1, n2, container, anchor)
     } else {
       // do nothing
+    }
+
+		if (ref) {
+      setRef(ref, n2)
     }
   }
 

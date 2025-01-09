@@ -13,7 +13,6 @@ export const generate = (
   return `${option.isBrowser ? 'return ' : ''}function render(_ctx) {
 		${option.isBrowser ? 'with (_ctx) {' : ''}
 			const { h } = VueTrim;
-			console.log(_ctx)
 			return ${genNode(children[0], option)};
 		${option.isBrowser ? '}' : ''}
 	}`

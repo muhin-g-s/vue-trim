@@ -1,3 +1,4 @@
+import { Ref } from '../reactivity';
 import { isObject, isString, ShapeFlags } from '../shared';
 import { ComponentInternalInstance } from './component';
 
@@ -13,6 +14,7 @@ export interface VNode<HostNode = any> {
 	component: ComponentInternalInstance | null;
 	key: string | number | symbol | null;
 	shapeFlag: number;
+	ref: Ref | null
 }
 
 export interface VNodeProps {
@@ -44,7 +46,8 @@ export function createVNode(
     el: undefined,
     key: props?.key ?? null,
     component: null,
-		shapeFlag
+		shapeFlag,
+		ref: props?.ref ?? null
   }
 
 	normalizeChildren(vnode, children)

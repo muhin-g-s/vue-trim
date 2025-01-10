@@ -52,3 +52,9 @@ export const isIntegerKey = (key: unknown) =>
   key !== 'NaN' &&
   key[0] !== '-' &&
   '' + parseInt(key, 10) === key
+
+export const invokeArrayFns = (fns: Function[], arg?: any) => {
+	for (let i = 0; i < fns.length; i++) {
+		fns[i](arg)
+	}
+}

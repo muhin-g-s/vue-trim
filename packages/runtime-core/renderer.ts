@@ -1,10 +1,27 @@
 import { ReactiveEffect } from '../reactivity'
-import { ShapeFlags } from '../shared'
-import { Component, ComponentInternalInstance, createComponentInstance, setupComponent } from './component'
+import { invokeArrayFns } from '../shared'
+import { ShapeFlags } from '../shared/shapeFlags'
+import {
+  Component,
+  ComponentInternalInstance,
+  createComponentInstance,
+  setupComponent,
+} from './component'
 import { updateProps } from './componentProps'
 import { setRef } from './rendererTemplateRef'
-import { queueJob, SchedulerJob } from './scheduler'
-import { Text, VNode, createVNode, isSameVNodeType, normalizeVNode } from './vnode'
+import {
+  SchedulerJob,
+  flushPostFlushCbs,
+  queueJob,
+  queuePostFlushCb,
+} from './scheduler'
+import {
+  Text,
+  VNode,
+  createVNode,
+  isSameVNodeType,
+  normalizeVNode,
+} from './vnode'
 
 export type RootRenderFunction<HostElement = RendererElement> = (
   vnode: Component,
@@ -15,14 +32,28 @@ export interface RendererOptions<
   HostNode = RendererNode,
   HostElement = RendererElement,
 > {
-  patchProp(el: HostElement, key: string, value: any): void
+  patchProp(
+    el: HostElement,
+    key: string,
+    prevValue: any,
+    nextValue: any,
+    prevChildren?: VNode<HostNode>[],
+    unmountChildren?: (children: VNode<HostNode>[]) => void,
+  ): void
+
   createElement(type: string): HostElement
+
   createText(text: string): HostNode
+
   setText(node: HostNode, text: string): void
+
   setElementText(node: HostNode, text: string): void
+
   insert(child: HostNode, parent: HostNode, anchor?: HostNode | null): void
-	parentNode(node: HostNode): HostNode | null
-	remove(child: HostNode): void
+
+  remove(child: HostNode): void
+
+  parentNode(node: HostNode): HostNode | null
 }
 
 export interface RendererNode {
@@ -37,10 +68,10 @@ export function createRenderer(options: RendererOptions) {
     createElement: hostCreateElement,
     createText: hostCreateText,
     setText: hostSetText,
+    setElementText: hostSetElementText,
     insert: hostInsert,
-		parentNode: hostParentNode,
-		remove: hostRemove,
-		setElementText: hostSetElementText,
+    remove: hostRemove,
+    parentNode: hostParentNode,
   } = options
 
   const patch = (
@@ -50,7 +81,6 @@ export function createRenderer(options: RendererOptions) {
     anchor: RendererElement | null,
   ) => {
     const { type, ref, shapeFlag } = n2
-
     if (type === Text) {
       processText(n1, n2, container, anchor)
     } else if (shapeFlag & ShapeFlags.ELEMENT) {
@@ -61,7 +91,7 @@ export function createRenderer(options: RendererOptions) {
       // do nothing
     }
 
-		if (ref) {
+    if (ref) {
       setRef(ref, n2)
     }
   }
@@ -92,7 +122,14 @@ export function createRenderer(options: RendererOptions) {
 
     if (props) {
       for (const key in props) {
-        hostPatchProp(el, key, props[key])
+        hostPatchProp(
+          el,
+          key,
+          null,
+          props[key],
+          vnode.children as VNode[],
+          unmountChildren,
+        )
       }
     }
 
@@ -117,13 +154,21 @@ export function createRenderer(options: RendererOptions) {
   ) => {
     const el = (n2.el = n1.el!)
 
-    const props = n2.props
+    const oldProps = n1.props || {}
+    const newProps = n2.props || {}
 
     patchChildren(n1, n2, el, anchor)
 
-    for (const key in props) {
-      if (props[key] !== (n1.props?.[key] ?? {})) {
-        hostPatchProp(el, key, props[key])
+    for (const key in oldProps) {
+      if (!(key in newProps)) {
+        hostPatchProp(el, key, oldProps[key], null)
+      }
+    }
+    for (const key in newProps) {
+      const next = newProps[key]
+      const prev = oldProps[key]
+      if (next !== prev) {
+        hostPatchProp(el, key, prev, next)
       }
     }
   }
@@ -134,7 +179,7 @@ export function createRenderer(options: RendererOptions) {
     container: RendererElement,
     anchor: RendererElement | null,
   ) => {
-		const c1 = n1 && n1.children
+    const c1 = n1 && n1.children
     const prevShapeFlag = n1 ? n1.shapeFlag : 0
     const c2 = n2.children
     const { shapeFlag } = n2
@@ -164,7 +209,7 @@ export function createRenderer(options: RendererOptions) {
     }
   }
 
-	const patchKeyedChildren = (
+  const patchKeyedChildren = (
     c1: VNode[],
     c2: VNode[],
     container: RendererElement,
@@ -253,7 +298,7 @@ export function createRenderer(options: RendererOptions) {
     }
   }
 
-	const move = (
+  const move = (
     vnode: VNode,
     container: RendererElement,
     anchor: RendererElement | null,
@@ -266,10 +311,9 @@ export function createRenderer(options: RendererOptions) {
     hostInsert(el!, container, anchor)
   }
 
-
-	const unmount = (vnode: VNode) => {
-    const { type, children } = vnode
-    if (typeof type === 'object') {
+  const unmount = (vnode: VNode) => {
+    const { children, shapeFlag } = vnode
+    if (shapeFlag & ShapeFlags.COMPONENT) {
       unmountComponent(vnode.component!)
     } else if (Array.isArray(children)) {
       unmountChildren(children as VNode[])
@@ -277,15 +321,26 @@ export function createRenderer(options: RendererOptions) {
     remove(vnode)
   }
 
-	const remove = (vnode: VNode) => {
+  const remove = (vnode: VNode) => {
     const { el } = vnode
     hostRemove(el!)
   }
 
   const unmountComponent = (instance: ComponentInternalInstance) => {
-    const { subTree, scope } = instance
-		scope.stop()
+    const { subTree, scope, bum, um } = instance
+
+    // beforeUnmount hook
+    if (bum) {
+      invokeArrayFns(bum)
+    }
+
+    scope.stop()
     unmount(subTree)
+
+    // unmounted hook
+    if (um) {
+      queuePostFlushCb(um)
+    }
   }
 
   const unmountChildren = (children: VNode[]) => {
@@ -314,7 +369,7 @@ export function createRenderer(options: RendererOptions) {
     }
   }
 
-	const processComponent = (
+  const processComponent = (
     n1: VNode | null,
     n2: VNode,
     container: RendererElement,
@@ -327,31 +382,46 @@ export function createRenderer(options: RendererOptions) {
     }
   }
 
-	const mountComponent = (
+  const mountComponent = (
     initialVNode: VNode,
     container: RendererElement,
     anchor: RendererElement | null,
   ) => {
+    // prettier-ignore
     const instance: ComponentInternalInstance = (initialVNode.component = createComponentInstance(initialVNode));
     setupComponent(instance)
     setupRenderEffect(instance, initialVNode, container, anchor)
   }
 
-	const setupRenderEffect = (
+  const setupRenderEffect = (
     instance: ComponentInternalInstance,
     initialVNode: VNode,
     container: RendererElement,
     anchor: RendererElement | null,
   ) => {
     const componentUpdateFn = () => {
-      const { render, setupState } = instance
+      const { render, setupState, bm, m, bu, u } = instance
+
       if (!instance.isMounted) {
+        // beforeMount hook
+        if (bm) {
+          invokeArrayFns(bm)
+        }
         const subTree = (instance.subTree = normalizeVNode(render(setupState)))
         patch(null, subTree, container, anchor)
         initialVNode.el = subTree.el
         instance.isMounted = true
+        // mounted hook
+        if (m) {
+          queuePostFlushCb(m)
+        }
       } else {
         let { next, vnode } = instance
+
+        // beforeUpdate hook
+        if (bu) {
+          invokeArrayFns(bu)
+        }
 
         if (next) {
           next.el = vnode.el
@@ -369,33 +439,40 @@ export function createRenderer(options: RendererOptions) {
 
         patch(prevTree, nextTree, hostParentNode(prevTree.el!)!, anchor)
         next.el = nextTree.el
+
+        // updated hook
+        if (u) {
+          queuePostFlushCb(u)
+        }
       }
     }
 
     const effect = (instance.effect = new ReactiveEffect(
       componentUpdateFn,
       () => queueJob(update),
-			instance.scope,
+      instance.scope,
     ))
     const update: SchedulerJob = (instance.update = () => effect.run())
     update.id = instance.uid
     update()
   }
 
-	const updateComponent = (n1: VNode, n2: VNode) => {
+  const updateComponent = (n1: VNode, n2: VNode) => {
     const instance = (n2.component = n1.component)!
     instance.next = n2
     instance.update()
   }
 
-	const render: RootRenderFunction = (rootComponent, container) => {
+  const render: RootRenderFunction = (rootComponent, container) => {
     const vnode = createVNode(rootComponent, {}, [])
     patch(null, vnode, container, null)
+    flushPostFlushCbs()
   }
 
   return { render }
 }
 
+// https://en.wikipedia.org/wiki/Longest_increasing_subsequence
 function getSequence(arr: number[]): number[] {
   const p = arr.slice()
   const result = [0]

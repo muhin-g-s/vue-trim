@@ -14,3 +14,12 @@ export {
 export { nextTick } from './scheduler'
 
 export { watch, watchEffect } from './apiWatch'
+
+export {
+  onBeforeMount,
+  onBeforeUnmount,
+  onBeforeUpdate,
+  onMounted,
+  onUnmounted,
+  onUpdated,
+} from './apiLifecycle'

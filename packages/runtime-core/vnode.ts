@@ -1,5 +1,6 @@
 import { Ref } from '../reactivity';
 import { isObject, isString, ShapeFlags } from '../shared';
+import { AppContext } from './apiCreateApp';
 import { ComponentInternalInstance } from './component';
 
 export const Text = Symbol();
@@ -14,7 +15,9 @@ export interface VNode<HostNode = any> {
 	component: ComponentInternalInstance | null;
 	key: string | number | symbol | null;
 	shapeFlag: number;
-	ref: Ref | null
+	ref: Ref | null;
+	// application root node only
+	appContext: AppContext | null
 }
 
 export interface VNodeProps {
@@ -47,7 +50,8 @@ export function createVNode(
     key: props?.key ?? null,
     component: null,
 		shapeFlag,
-		ref: props?.ref ?? null
+		ref: props?.ref ?? null,
+		appContext: null
   }
 
 	normalizeChildren(vnode, children)

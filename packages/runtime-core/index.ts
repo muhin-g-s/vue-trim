@@ -23,3 +23,5 @@ export {
   onUnmounted,
   onUpdated,
 } from './apiLifecycle'
+
+export { provide, inject, type InjectionKey } from './apiInject'
